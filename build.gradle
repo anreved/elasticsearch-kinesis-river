@@ -1,0 +1,82 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'scala'
+
+// set the name of the build directory
+buildDir 'target'
+
+// common jar configuration
+jar {
+    enabled true
+    destinationDir new File(project.buildDir, "dist")
+
+    manifest {
+        //           attributes(
+        //'git-revision' : "${buildRevision}", // project.ext.buildRevision
+        //'git-branch'   : "${buildBranch}", // project.ext.buildBranch
+        //'build-time'   : "${timestamp}"
+//            )
+    }
+}
+
+configurations {
+
+    // add a custom "provided" configuration for things like servlet-api, oracle driver, etc.
+    provided {
+        transitive false
+    }
+}
+
+// tell gradle where our sources live
+sourceSets {
+
+    // main java/scala source, add provided libraries to the compile classpath
+    main {
+        compileClasspath += configurations.provided
+        java.srcDirs = ['src/main/java']
+        scala.srcDirs = ['src/main/java', 'src/main/scala']
+    }
+
+    // test sources: again, add provided libs to the compilation classpath
+    test {
+        compileClasspath += configurations.provided
+        runtimeClasspath += configurations.provided
+        java.srcDirs = ['src/test/java']
+        scala.srcDirs = ['src/test/java', 'src/test/scala']
+        resources.srcDirs = ['src/test/resources']
+    }
+}
+
+// configure the intellij plugin
+idea {
+
+    // add provided libs here so intellij knows they exist
+    module {
+        scopes.PROVIDED.plus += [configurations.provided]
+
+        // include sources and javadoc
+        downloadJavadoc = true
+        downloadSources = true
+
+        // don't show the target directory in intellij
+        excludeDirs = [file(project.buildDir)]
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.scala-lang:scala-library:2.11.1',
+            'com.amazonaws:aws-java-sdk:1.7.13',
+            'com.amazonaws:amazon-kinesis-client:1.1.0'
+
+    provided 'org.elasticsearch:elasticsearch:1.3.1'
+}
