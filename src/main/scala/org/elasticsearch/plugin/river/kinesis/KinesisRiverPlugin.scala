@@ -26,3 +26,9 @@ class KinesisRiverPlugin extends AbstractPlugin {
     module.registerRiver("kinesis", classOf[KinesisRiverModule])
   }
 }
+
+object KinesisRiverPlugin {
+
+  def apply() = new KinesisRiverPlugin
+
+}

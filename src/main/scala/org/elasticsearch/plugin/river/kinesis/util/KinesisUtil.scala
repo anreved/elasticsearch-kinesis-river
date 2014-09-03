@@ -5,23 +5,37 @@ import com.amazonaws.regions.{RegionUtils, Region}
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 import com.amazonaws.services.kinesis.model.{ResourceNotFoundException, DescribeStreamResult}
 import java.util.concurrent.TimeUnit
-import com.amazonaws.auth.AWSCredentials
+import com.amazonaws.auth.{AWSCredentialsProvider, AWSCredentials}
 import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
+import org.elasticsearch.common.inject.{Singleton, Provider, Inject}
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
+import java.util.UUID
 
+@Singleton
+class KinesisUtil @Inject() (credentials: Provider[AWSCredentials],
+                             riverConfig: KinesisRiverConfig) extends Logging {
 
-class KinesisUtil(credentials: AWSCredentials, riverConfig: KinesisRiverConfig) extends Logging {
 
   val clientConfig = configureUserAgent(new ClientConfiguration())
-
-  // setup the client config and kinesis client
-  val kinesisClient = new AmazonKinesisClient(credentials, clientConfig)
-      kinesisClient.setRegion(parseRegion(riverConfig.streamConfig.region))
 
   val streamName = riverConfig.streamConfig.streamName
   val streamNumShards = riverConfig.streamConfig.numShards
 
+  // create the kinesis client as a var
+  var kinesisClient: AmazonKinesisClient = _
+
   /**
-   * Creates a new client configuration with a uniquely identifiable value for this sample application.
+   * Initialize the kinesis client
+   *
+   * We do it this way so we don't automatically connect unless explicitly called (we don't need unit tests to connect)
+   */
+  def initKinesisClient = {
+    kinesisClient = new AmazonKinesisClient(credentials.get(), clientConfig)
+    kinesisClient.setRegion(parseRegion(riverConfig.streamConfig.region))
+  }
+
+  /**
+   * Creates a new client configuration with a uniquely identifiable value for this application.
    *
    * @param clientConfig The client configuration to copy.
    * @return A new client configuration based on the provided one with its user agent overridden.
@@ -112,6 +126,27 @@ class KinesisUtil(credentials: AWSCredentials, riverConfig: KinesisRiverConfig) 
     catch {
       case r: ResourceNotFoundException => Right(r)
     }
+  }
+
+
+  /**
+   * Generates the client library config for kinesis - needed by the kinesis worker factory
+   * @return the client library config
+   */
+  def createClientLibraryConfig: KinesisClientLibConfiguration = {
+    val kclConfig = new KinesisClientLibConfiguration(
+      riverConfig.streamConfig.applicationName,
+      riverConfig.streamConfig.streamName,
+      new AWSCredentialsProvider {
+        override def refresh() = Unit
+        override def getCredentials = credentials.get()
+      },
+      UUID.randomUUID().toString
+    )
+
+    kclConfig.withCommonClientConfig(clientConfig)
+      .withRegionName(riverConfig.streamConfig.region)
+      .withInitialPositionInStream(riverConfig.streamConfig.initialPosition);
   }
 }
 

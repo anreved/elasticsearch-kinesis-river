@@ -1,23 +1,18 @@
 package org.elasticsearch.plugin.river.kinesis.config
 
 import org.elasticsearch.river.RiverSettings
+import org.elasticsearch.common.inject.Inject
 
 /**
  * Created by JohnDeverna on 8/8/14.
  */
-case class KinesisRiverConfig(awsConfig: AwsConfig,
-                              streamConfig: StreamConfig,
-                              elasticsearchConfig: ElasticsearchConfig,
-                              parserConfig: ParserConfig)
+class KinesisRiverConfig @Inject()(settings: RiverSettings) {
 
-object KinesisRiverConfig {
+  val awsConfig: AwsConfig = AwsConfig(settings)
 
-  def apply(settings: RiverSettings) = {
-    new KinesisRiverConfig(
-         AwsConfig(settings),
-         StreamConfig(settings),
-         ElasticsearchConfig(settings),
-         ParserConfig(settings)
-    )
-  }
+  val streamConfig: StreamConfig = StreamConfig(settings)
+
+  val elasticsearchConfig: ElasticsearchConfig = ElasticsearchConfig(settings)
+
+  val parserConfig: ParserConfig = ParserConfig(settings)
 }

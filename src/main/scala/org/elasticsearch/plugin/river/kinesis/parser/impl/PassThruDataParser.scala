@@ -6,13 +6,14 @@ import org.elasticsearch.plugin.river.kinesis.exception.PoorlyFormattedDataExcep
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.plugin.river.kinesis.util.Logging
 import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
+import org.elasticsearch.common.inject.Inject
 
 /**
  * Created by JohnDeverna on 8/9/14.
  */
-class PassThruDataParser(config: KinesisRiverConfig) extends KinesisDataParser(config) with Logging {
+class PassThruDataParser @Inject() (config: KinesisRiverConfig) extends KinesisDataParser(config) with Logging {
 
   @throws[PoorlyFormattedDataException]("if the data cannot be parsed")
-  override def processInternal(data: ByteBuffer, req: IndexRequest) = req.source(data)
+  override def processInternal(data: ByteBuffer, req: IndexRequest) = req.source(data.array())
 
 }

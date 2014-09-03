@@ -1,0 +1,28 @@
+{
+    "type" : "kinesis",
+    "kinesis" : {
+        "region" : "us-east-1",
+        "applicationName" : "my_kinesis_application",
+        "initialPosition" : "latest",
+        "streamName" : "MyStreamName",
+        "numShards" : 1,
+        "createIfNotExists" : true
+    },
+    "aws" : {
+        "accessKey" : "myKey",
+        "secretKey" : "mySecret"
+    },
+    "elasticsearch" : {
+        "index" : "myIndexName-{day}",
+        "type" : "myRecordType",
+        "maxBulkSize" : 20000,
+        "refreshOnBulk" : true,
+        "bulkTimeout" : "1000ms",
+        "replicationType" : "default",
+        "consistencyLevel" : "default"
+    },
+    "parser":{
+        "class": "org.elasticsearch.plugin.river.kinesis.parser.impl.JsonPassThruDataParser",
+        "encoding": "UTF-8"
+    }
+}

@@ -1,27 +1,26 @@
-package org.elasticsearch.plugin.river.kinesis
+package org.elasticsearch.plugin.river.kinesis.mock
 
 import org.elasticsearch.common.inject.AbstractModule
-import org.elasticsearch.river.River
-import org.elasticsearch.plugin.river.kinesis.parser.{KinesisDataParserProvider, KinesisDataParser}
-import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
-import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
-import org.elasticsearch.plugin.river.kinesis.processor.KinesisRecordProcessorFactory
 import com.amazonaws.auth.AWSCredentials
 import org.elasticsearch.plugin.river.kinesis.util.{KinesisUtil, AwsCredentialsProvider}
+import org.elasticsearch.plugin.river.kinesis.parser.{KinesisDataParserProvider, KinesisDataParser}
+import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory
+import org.elasticsearch.plugin.river.kinesis.processor.KinesisRecordProcessorFactory
+import org.elasticsearch.river.River
+import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
 import org.elasticsearch.plugin.river.kinesis.worker.KinesisWorker
 
 /**
- * Created by JohnDeverna on 8/8/14.
+ * Created by JohnDeverna on 9/3/14.
  */
-class KinesisRiverModule extends AbstractModule {
+class UnitTestModule extends AbstractModule {
 
   /**
    * {@inheritdoc}
    */
   @Override
   protected def configure() = {
-
-    // bind settings, aws credentials
+    // bind config and aws credentials
     bind(classOf[KinesisRiverConfig]).asEagerSingleton()
     bind(classOf[AWSCredentials]).toProvider(classOf[AwsCredentialsProvider]).asEagerSingleton()
 
@@ -34,7 +33,6 @@ class KinesisRiverModule extends AbstractModule {
     bind(classOf[KinesisWorker])
 
     // finally, setup our river
-    bind(classOf[River]).to(classOf[KinesisRiver]).asEagerSingleton()
+    bind(classOf[River]).to(classOf[MockKinesisRiver]).asEagerSingleton()
   }
-
 }

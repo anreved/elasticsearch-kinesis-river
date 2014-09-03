@@ -1,4 +1,4 @@
-package org.elasticsearch.plugin.river.kinesis
+package org.elasticsearch.plugin.river.kinesis.processor
 
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.{IRecordProcessorCheckpointer, IRecordProcessor}
 import com.amazonaws.services.kinesis.model.Record
@@ -10,14 +10,18 @@ import org.elasticsearch.action.bulk.{BulkResponse, BulkRequestBuilder}
 import org.elasticsearch.plugin.river.kinesis.exception.PoorlyFormattedDataException
 import org.elasticsearch.plugin.river.kinesis.util.Logging
 import org.elasticsearch.client.Client
-import org.elasticsearch.plugin.river.kinesis.parser.KinesisDataParserFactory
 import scala.collection.JavaConversions._
 import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
+import org.elasticsearch.common.inject.Provider
+import org.elasticsearch.plugin.river.kinesis.parser.KinesisDataParser
 
 /**
  * Created by JohnDeverna on 8/8/14.
  */
-case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, dataParserFactory: KinesisDataParserFactory)
+case class KinesisRecordProcessor(client: Client,
+                                  config: KinesisRiverConfig,
+                                  dataParserProvider: Provider[KinesisDataParser])
+
   extends IRecordProcessor with Logging {
 
   /**
@@ -48,7 +52,7 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
    */
   override def shutdown(checkpointer: IRecordProcessorCheckpointer, reason: ShutdownReason) = {
 
-    Log.info("Shutting down record processor for shard: {}", shardId);
+    Log.info("Shutting down record processor for shard: {}, reason: {}", shardId, reason.name());
 
     // Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
     if (ShutdownReason.TERMINATE.equals(reason)) {
@@ -64,19 +68,27 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
    */
   override def processRecords(records: java.util.List[Record], checkpointer: IRecordProcessorCheckpointer) {
 
-    Log.debug("Processing {} records from shard {}", records.size().toString, shardId)
+    Log.info("Processing {} record(s) from shard {}", records.size().toString, shardId)
 
     // Process records and perform all exception handling.
     processRecordsInternal(records);
 
     // Checkpoint once every checkpoint interval.
     if (System.currentTimeMillis() > nextCheckpointTimeInMillis.get()) {
+      Log.info("Check-pointing with Kinesis")
       checkpoint(checkpointer)
       nextCheckpointTimeInMillis.set(System.currentTimeMillis() + KinesisRecordProcessor.CHECKPOINT_INTERVAL_MILLIS)
     }
   }
 
+  /**
+   * Execute the bulk index request
+   * @param bulkBuilder the bulk builder
+   */
   private def performBulkRequest(bulkBuilder: BulkRequestBuilder): Unit = {
+
+    Log.debug("Executing bulk indexing request for {} item(s)", bulkBuilder.numberOfActions().toString)
+
     val response: BulkResponse = bulkBuilder.get()
 
     Log.debug("KinesisRiver indexed {} of {} items and took {}",
@@ -108,11 +120,15 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
 
     val recordList = asScalaBuffer(records)
 
+    Log.info("Starting to process {} kinesis records", recordList.size.toString)
+
     recordList.foreach(record => {
       processSingleRecord(record, bulkBuilder)
 
       // if we've reached the max size for bulk actions,
       if(bulkBuilder.numberOfActions() >= config.elasticsearchConfig.maxBulkSize) {
+
+        Log.info("Reached max bulk request size at {} items.", bulkBuilder.numberOfActions().toString)
 
         // execute the batch
         performBulkRequest(bulkBuilder)
@@ -124,6 +140,7 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
 
     // process any remaining (that didn't go over max bulk size)
     if (bulkBuilder.numberOfActions() > 0) {
+      Log.info("Bulk reqeust has {} item(s) in it, sending for indexing", bulkBuilder.numberOfActions().toString)
       performBulkRequest(bulkBuilder)
     }
   }
@@ -144,7 +161,10 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
           processSingleRecord(record, builder, attempt + 1)
         }
         catch {
-          case e: Exception => Right(e)
+          case e: Exception => {
+            Log.error("Error processing single record", e)
+            Right(e)
+          }
         }
       }
     }
@@ -154,18 +174,28 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
       // get the data and do something with it
       val raw = record.getData;
 
+      Log.info("Got raw record data from kinesis")
+
       // parse the data and add to the bulk loader
-      builder.add(dataParserFactory.getParser.parse(raw))
+      builder.add(dataParserProvider.get().parse(raw))
+
+      Log.info("Added record to bulk indexing queue")
 
       // return success
       Left(true)
     }
     catch {
       // if data is poorly formatted, there is nothing to retry
-      case p: PoorlyFormattedDataException => Right(p)
+      case p: PoorlyFormattedDataException => {
+        Log.error("Unable to parse data from Kinesis stream", p)
+        Right(p)
+      }
 
       // any other exception, try again
-      case e: Exception => retry
+      case e: Exception => {
+        Log.error("Error adding record to builder", e)
+        retry
+      }
     }
   }
 
@@ -176,7 +206,7 @@ case class KinesisRecordProcessor(client: Client, config: KinesisRiverConfig, da
 
     import scala.util.control.Breaks._
 
-    Log.info("Checkpointing shard {}", shardId);
+    Log.info("Checkpointing s hard {}", shardId);
 
     for (i <- 0 to KinesisRecordProcessor.NUM_RETRIES) {
       try {
