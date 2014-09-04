@@ -60,6 +60,32 @@ The configuration is broken down into four parts.
 | createIfNotExists  | True to create the stream if it doesn't already exist | N | true |
 
 
+######AWS Configuration
+
+The plugin will attempt to connect to AWS using multiple fallback methods
+
+* Load from property file (if _keyFile_ property configured)
+* Use access and secret keys defined
+* Look for System properties with a prefix defined using the _propertyPrefix_ config
+* Use Instance credentials (e.g., EC2 instance credentials)
+
+
+| Config Key      | Description    | Required        | Default Value |
+| -------------   | -------------  | -------------   | ------------- |
+| accessKey       | The AWS access key | N               |   |
+| secretKey       | The AWS secret key | N | |
+| keyFile         | The location of a file that contains the access and secret keys | N |  |
+| propertyPrefix  | The prefix of the 2 system properties that define the access and secret keys.  i.e., _prefix_.accessKey, _prefix_.secretKey | N | |
+
+
+######Parser Configuration
+
+| Config Key        | Description    | Required        | Default Value |
+| -------------     | -------------  | -------------   | ------------- |
+| class             | The fully qualified parser class to use (see below) | N               | PassThruParser     |
+| *                 | Arbitrary additional configs to pass along to the specific parser instance chosen | N | |
+
+
 ###Sample River Config
 ```json
 curl -XPUT 'localhost:9200/_river/my_kinesis_river_0/_meta' -d '{
