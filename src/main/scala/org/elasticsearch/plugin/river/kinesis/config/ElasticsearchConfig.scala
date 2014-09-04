@@ -39,8 +39,8 @@ object ElasticsearchConfig extends Config[ElasticsearchConfig] {
 
   val defaultIndex = "kinesis-river-{day}"
   val defaultRecordType = "kinesis-stream"
-  val defaultMaxBulkSize = "20000"
-  val defaultRefreshOnBulk = "true"
+  val defaultMaxBulkSize = 20000
+  val defaultRefreshOnBulk = true
   val defaultBulkTimeout = "1m"
   val defaultReplicationType = "default"
   val defaultConsistencyLevel = "default"
@@ -63,8 +63,8 @@ object ElasticsearchConfig extends Config[ElasticsearchConfig] {
         timestampField = getAsOpt(es, "timestampField"),
         timestampFormat = getAsOpt(es, "timestampFormat"),
 
-        maxBulkSize = Integer.valueOf(getAsOrElse(es, "maxBulkSize", defaultMaxBulkSize)),
-        refreshOnBulk = getAsOrElse(es, "refreshOnBulk", defaultRefreshOnBulk).equals("true"),
+        maxBulkSize = getAsOrElse(es, "maxBulkSize", defaultMaxBulkSize),
+        refreshOnBulk = getAsOrElse(es, "refreshOnBulk", defaultRefreshOnBulk),
         bulkTimeout = getAsOrElse(es, "bulkTimeout", defaultBulkTimeout),
 
         replicationType = ReplicationType.fromString(getAsOrElse(es, "replicationType", defaultReplicationType)),

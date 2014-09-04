@@ -10,6 +10,9 @@ import scala.collection.JavaConversions._
  */
 trait Config[T] {
 
+  implicit def stringToBoolean(s: String): Boolean = s.equals("true")
+  implicit def stringToInteger(s: String): Int = Integer.valueOf(s)
+
   /**
    * Force implementation of the constructor
    * @param settings the river settings
@@ -45,7 +48,16 @@ trait Config[T] {
    */
   def getAsOrElse[T](map: Map[String, AnyRef], key: String, default: T) : T = {
     map.get(key) match {
-      case Some(v) => v.asInstanceOf[T]
+      // types match, just cast and return
+      case Some(v) if(v.getClass.equals(default.getClass)) => v.asInstanceOf[T]
+
+      // types don't match
+      case Some(v) => default.getClass match {
+        case c if(c.equals(classOf[java.lang.Boolean])) => ("true".equals(v.toString)).asInstanceOf[T]
+        case c if(c.equals(classOf[java.lang.Integer])) => Integer.valueOf(v.toString).asInstanceOf[T]
+        case _ => v.asInstanceOf[T]
+      }
+
       case _ => default
     }
   }
@@ -68,7 +80,17 @@ trait Config[T] {
    */
   def getAsOpt[T](map: Map[String, AnyRef], key: String, expectedType: Class[T]) : Option[T] = {
     map.get(key) match {
-      case Some(v) => Some(v.asInstanceOf[T])
+      // types match, just cast and return
+      case Some(v) if(v.getClass.equals(expectedType)) => Some(v.asInstanceOf[T])
+
+      // types don't match
+      case Some(v) => expectedType match {
+        case c if(c.equals(classOf[java.lang.Boolean])) => Some(("true".equals(v.toString)).asInstanceOf[T])
+        case c if(c.equals(classOf[java.lang.Integer])) => Some(Integer.valueOf(v.toString).asInstanceOf[T])
+        case _ => Some(v.asInstanceOf[T])
+      }
+
+      // no value found
       case _ => None
     }
   }

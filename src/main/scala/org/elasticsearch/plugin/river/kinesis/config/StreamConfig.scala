@@ -33,8 +33,8 @@ object StreamConfig extends Config[StreamConfig] {
   val defaultAppName = "elasticsearch-kinesis-river"
   val defaultInitialPosition = "latest"
   val defaultStreamName = "elasticsearch-stream"
-  val defaultNumShards = "1"
-  val defaultCreateIfNotExists = "true"
+  val defaultNumShards = 1
+  val defaultCreateIfNotExists = true
 
   /**
    * Constructor
@@ -52,16 +52,16 @@ object StreamConfig extends Config[StreamConfig] {
           case _ => InitialPositionInStream.TRIM_HORIZON
         },
         streamName = getAsOrElse(es, "streamName", defaultStreamName),
-        numShards = Integer.valueOf(getAsOrElse(es, "numShards", defaultNumShards)),
-        createIfNotExist = getAsOrElse(es, "createIfNotExists", defaultCreateIfNotExists).equals("true")
+        numShards = getAsOrElse(es, "numShards", defaultNumShards),
+        createIfNotExist = getAsOrElse(es, "createIfNotExists", defaultCreateIfNotExists)
       )
       case _ => new StreamConfig(
         defaultRegion,
         defaultAppName,
         InitialPositionInStream.LATEST,
         defaultStreamName,
-        Integer.valueOf(defaultNumShards),
-        defaultCreateIfNotExists.equals("true")
+        defaultNumShards,
+        defaultCreateIfNotExists
       )
     }
   }
