@@ -7,6 +7,11 @@ import org.elasticsearch.common.inject.{Singleton, Inject, Provider}
 import org.elasticsearch.plugin.river.kinesis.parser.KinesisDataParser
 
 /**
+ * The IRecordProcessorFactory implementation required for any Kinesis application
+ * @param client The elasticsearch client
+ * @param config The river config
+ * @param parserProvider The data parser provider
+ *
  * Created by JohnDeverna on 8/8/14.
  */
 @Singleton

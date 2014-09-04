@@ -11,23 +11,40 @@ import org.elasticsearch.common.inject.{Singleton, Provider, Inject}
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration
 import java.util.UUID
 
+/**
+ * Wraps much of the Kinesis setup and interaction
+ * @param credentials The AWS credentials provider
+ * @param riverConfig The river config
+ */
 @Singleton
 class KinesisUtil @Inject() (credentials: Provider[AWSCredentials],
                              riverConfig: KinesisRiverConfig) extends Logging {
 
+  /**
+   * The basic Kinesis client config
+   */
+  private val clientConfig = configureUserAgent(new ClientConfiguration())
 
-  val clientConfig = configureUserAgent(new ClientConfiguration())
+  /**
+   * The name of the kinesis stream
+   */
+  private val streamName = riverConfig.streamConfig.streamName
 
-  val streamName = riverConfig.streamConfig.streamName
-  val streamNumShards = riverConfig.streamConfig.numShards
+  /**
+   * The number of shards in the stream
+   */
+  private val streamNumShards = riverConfig.streamConfig.numShards
 
-  // create the kinesis client as a var
+  /**
+   * The kinesis client (must be initialized before use)
+   */
   var kinesisClient: AmazonKinesisClient = _
 
   /**
    * Initialize the kinesis client
    *
-   * We do it this way so we don't automatically connect unless explicitly called (we don't need unit tests to connect)
+   * We do it this way so we don't automatically connect
+   * unless explicitly called (we don't need unit tests to connect)
    */
   def initKinesisClient = {
     kinesisClient = new AmazonKinesisClient(credentials.get(), clientConfig)
@@ -151,7 +168,11 @@ class KinesisUtil @Inject() (credentials: Provider[AWSCredentials],
 }
 
 
+/**
+ * Simple 'static' variable values
+ */
 object KinesisUtil {
   val DELAY_BETWEEN_STATUS_CHECKS_IN_SECONDS = TimeUnit.SECONDS.toMillis(30)
+
   val MAX_RETRIES = 3;
 }

@@ -3,14 +3,17 @@ package org.elasticsearch.plugin.river.kinesis.util
 import org.elasticsearch.common.logging.Loggers
 
 /**
- * Created by JohnDeverna on 8/8/14.
- *
  * Simple trait that wraps the ES logger functionality
+ *
+ * Created by JohnDeverna on 8/8/14.
  */
 trait Logging {
 
   val kinesisLogger = Loggers.getLogger(getClass)
 
+  /**
+   * The Log object, simply wraps calls to the ES Logger
+   */
   object Log {
     def info(msg: String, params: AnyRef*) = kinesisLogger.info(msg, params:_*)
 
@@ -28,7 +31,10 @@ trait Logging {
 
     def error(msg: String, cause: Throwable, params: AnyRef*) = kinesisLogger.error(msg, cause, params:_*)
   }
-
 }
 
+/**
+ * Object that implements the Logging trait.  Now Logging can be mixed in as a trait,
+ * or imported directly if mixin is not possible
+ */
 object Logging extends Logging

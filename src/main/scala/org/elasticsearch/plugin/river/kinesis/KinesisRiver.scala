@@ -8,6 +8,14 @@ import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
 import org.elasticsearch.plugin.river.kinesis.worker.KinesisWorker
 
 /**
+ * The River
+ * @param riverName The river name
+ * @param settings The global settings
+ * @param client The elasticsearch client
+ * @param riverConfig The river config/settings
+ * @param kinesisUtil The kinesis util
+ * @param kinesisWorker The kinesis worker
+ *
  * Created by JohnDeverna on 8/8/14.
  */
 class KinesisRiver @Inject() (riverName: RiverName,
@@ -21,7 +29,9 @@ class KinesisRiver @Inject() (riverName: RiverName,
      with River
      with Logging {
 
-
+  /**
+   * {@inheritdoc}
+   */
   override def start() = {
 
     // initialize the client
@@ -29,7 +39,6 @@ class KinesisRiver @Inject() (riverName: RiverName,
 
     // ensure the shard exists and is active
     kinesisUtil.createStreamIfNotExists()
-
 
     try {
       Log.info("Starting Kinesis worker")
@@ -42,6 +51,9 @@ class KinesisRiver @Inject() (riverName: RiverName,
     }
   }
 
+  /**
+   * {@inheritdoc}
+   */
   override def close() = {
 
     Log.info("Shutting down Kinesis worker")

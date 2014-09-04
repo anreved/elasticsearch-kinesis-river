@@ -18,6 +18,12 @@ import org.elasticsearch.plugin.river.kinesis.parser.KinesisDataParser
 /**
  * Created by JohnDeverna on 8/8/14.
  */
+/**
+ * The implementation of IRecordProcessor required to process records from a Kinesis stream
+ * @param client The Elasticsearch client
+ * @param config The river config
+ * @param dataParserProvider The data parser provider
+ */
 case class KinesisRecordProcessor(client: Client,
                                   config: KinesisRiverConfig,
                                   dataParserProvider: Provider[KinesisDataParser])
@@ -25,7 +31,7 @@ case class KinesisRecordProcessor(client: Client,
   extends IRecordProcessor with Logging {
 
   /**
-   * keep track of how often we checkpoint with kinesis
+   * Keeps track of the next time we need to checkpoint (every 60 seconds)
    */
   private val nextCheckpointTimeInMillis = new AtomicLong(
     System.currentTimeMillis() + KinesisRecordProcessor.CHECKPOINT_INTERVAL_MILLIS
@@ -145,8 +151,16 @@ case class KinesisRecordProcessor(client: Client,
     }
   }
 
+  /**
+   * Actual processing of a single data record
+   * @param record The record
+   * @param builder The BulkRequestBuilder
+   * @param attempt which attempt we're on
+   * @return Either a boolean (true if processed, false if failed) or exception
+   */
   def processSingleRecord(record: Record, builder: BulkRequestBuilder, attempt: Int = 0): Either[Boolean, Exception] = {
 
+    // internal retry method
     def retry = {
 
       // if we've tried too many times, just end it here
@@ -200,7 +214,8 @@ case class KinesisRecordProcessor(client: Client,
   }
 
   /**
-   * Checkpoint with retries.
+   * Checkpoint with kinesis -- retry if needed
+   * @param checkpointer the checkpointer
    */
   private def checkpoint(checkpointer: IRecordProcessorCheckpointer): Unit = {
 
@@ -250,12 +265,16 @@ case class KinesisRecordProcessor(client: Client,
 }
 
 
-
+/**
+ * KinesisRecordProcessor companion
+ */
 object KinesisRecordProcessor {
+
   // Backoff and retry settings
   private val BACKOFF_TIME_IN_MILLIS = 3000L
 
-  private val NUM_RETRIES = 10
+  // max number of times to retry
+  private val NUM_RETRIES = 3
 
   // Checkpoint about once a minute
   private val CHECKPOINT_INTERVAL_MILLIS = 60000L;

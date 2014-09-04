@@ -4,6 +4,8 @@ import org.elasticsearch.plugins.AbstractPlugin
 import org.elasticsearch.river.RiversModule
 
 /**
+ * The Kinesis plugin
+ *
  * Created by JohnDeverna on 8/8/14.
  */
 class KinesisRiverPlugin extends AbstractPlugin {
@@ -27,8 +29,14 @@ class KinesisRiverPlugin extends AbstractPlugin {
   }
 }
 
+/**
+ * River companion object
+ */
 object KinesisRiverPlugin {
 
+  /**
+   * Constructor
+   * @return a new Kinesis River plugin
+   */
   def apply() = new KinesisRiverPlugin
-
 }

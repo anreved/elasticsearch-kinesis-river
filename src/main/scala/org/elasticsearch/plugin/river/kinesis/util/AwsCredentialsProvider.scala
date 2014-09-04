@@ -16,6 +16,10 @@ import org.elasticsearch.plugin.river.kinesis.config.KinesisRiverConfig
  */
 class AwsCredentialsProvider @Inject() (riverConfig: KinesisRiverConfig) extends Provider[AWSCredentials] {
 
+  /**
+   * Get the credentials
+   * @return the AWSCredentials instance
+   */
   override def get(): AWSCredentials = {
 
     val r = riverConfig.awsConfig
@@ -45,6 +49,4 @@ class AwsCredentialsProvider @Inject() (riverConfig: KinesisRiverConfig) extends
       case _ => new InstanceProfileCredentialsProvider().getCredentials
     }
   }
-
-
 }

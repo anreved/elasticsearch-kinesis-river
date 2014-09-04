@@ -15,6 +15,10 @@ import org.elasticsearch.plugin.river.kinesis.util.Logging
 case class ParserConfig(parserClass: Class[_ <: KinesisDataParser],
                         additionalConfig: Map[String, AnyRef])
 
+
+/**
+ * The ParserConfig companion
+ */
 object ParserConfig extends Config[ParserConfig] with Logging {
 
   lazy val defaultParserClass = classOf[PassThruDataParser]

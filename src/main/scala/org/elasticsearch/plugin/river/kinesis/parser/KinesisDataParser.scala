@@ -12,20 +12,29 @@ import org.elasticsearch.plugin.river.kinesis.util.Logging.Log
 import java.util.Date
 
 /**
+ * Abstract data parser parent class
+ * @param riverConfig the river configuration
+ *
  * Created by JohnDeverna on 8/9/14.
  */
 abstract class KinesisDataParser(riverConfig: KinesisRiverConfig) {
 
+  /**
+   * Main entry point called by the Kinesis record processor.
+   * @param data The raw data from Kinesis
+   * @throws PoorlyFormattedDataException if data cannot be parsed as expected
+   * @return an IndexRequest with the source, as well as index/type defined
+   */
   @throws[PoorlyFormattedDataException]("if the data cannot be parsed")
   def parse(data: ByteBuffer): IndexRequest = {
 
-    // new index request
+    // create a new index request
     val req = new IndexRequest()
 
     // parse the data internally
     processInternal(data, req)
 
-    // set the index and type (these may depend on values
+    // set the index and type (these may depend on values in the source)
     req.index(KinesisDataParser.getIndex(riverConfig.elasticsearchConfig, req))
       .`type`(KinesisDataParser.getRecordType(riverConfig.elasticsearchConfig, req))
 
@@ -33,13 +42,27 @@ abstract class KinesisDataParser(riverConfig: KinesisRiverConfig) {
     req
   }
 
+  /**
+   * The function that actually tries to parse the Kinesis data into something Elasticsearch can index
+   *
+   * This will be overridden by any parser implementation
+   *
+   * @param data The raw kinesis data
+   * @param request The IndexRequest object
+   * @throws PoorlyFormattedDataException If the data cannot be parsed by the parserImpl
+   */
   @throws[PoorlyFormattedDataException]("if the data cannot be parsed")
-  def processInternal(data: ByteBuffer, request: IndexRequest): IndexRequest
-
+  def processInternal(data: ByteBuffer, request: IndexRequest): Unit
 }
 
+/**
+ * KinesisDataParser companion
+ */
 object KinesisDataParser {
 
+  /**
+   * The "friendly" date formats to their corresponding java date format
+   */
   val dateFormats = Map[String, String](
     "hour" -> "yyyy-MM-dd-HH",
     "day" -> "yyyy-MM-dd",
@@ -47,6 +70,11 @@ object KinesisDataParser {
     "year" -> "yyyy"
   )
 
+  /**
+   * The collection of SimpleDateFormat instances corresponding to our friendly dateFormats
+   *
+   * This is MUTABLE so we can add custom date formats at runtime
+   */
   lazy val formatters = scala.collection.mutable.Map[String, SimpleDateFormat](
     "hour" -> new SimpleDateFormat(dateFormats("hour")),
     "day" -> new SimpleDateFormat(dateFormats("day")),
@@ -54,6 +82,9 @@ object KinesisDataParser {
     "year" -> new SimpleDateFormat(dateFormats("year"))
   )
 
+  /**
+   * Regex to see if an indexName has a replacement group
+   */
   val indexRegex = Pattern.compile("^.+\\{(.*?)\\}.*$")
 
   /**
@@ -164,11 +195,17 @@ object KinesisDataParser {
     }
   }
 
-
+  /**
+   * Process the index name and replace any replacement groups with the properly formatted date
+   * @param name The index name (which may need to have the date inserted)
+   * @param ts The timestamp for this particular record (either from the source, or the date now)
+   * @return The parsed index name
+   */
   def parseIndexName(name: String, ts: Date): String = {
 
     val m = indexRegex.matcher(name)
 
+    // see if the name needs parsing
     m.matches() match {
 
       // we have a match, let's figure out what date format we need

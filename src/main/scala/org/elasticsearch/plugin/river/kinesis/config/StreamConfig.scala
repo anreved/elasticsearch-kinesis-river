@@ -4,7 +4,16 @@ import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionIn
 import org.elasticsearch.river.RiverSettings
 import scala.collection.JavaConversions._
 
+
 /**
+ * The Kinesis specific configuration
+ * @param region the AWS region
+ * @param applicationName The application name
+ * @param initialPosition The initial position in stream
+ * @param streamName the name of the Kinesis stream
+ * @param numShards the number of shards
+ * @param createIfNotExist True to create the stream if it doesn't already exist
+ *
  * Created by JohnDeverna on 8/12/14.
  */
 case class StreamConfig(region: String,
@@ -14,6 +23,10 @@ case class StreamConfig(region: String,
                         numShards: Int,
                         createIfNotExist: Boolean)
 
+
+/**
+ * The StreamConfig companion
+ */
 object StreamConfig extends Config[StreamConfig] {
 
   val defaultRegion = "us-east-1"
@@ -23,6 +36,11 @@ object StreamConfig extends Config[StreamConfig] {
   val defaultNumShards = "1"
   val defaultCreateIfNotExists = "true"
 
+  /**
+   * Constructor
+   * @param settings the river settings
+   * @return a Stream Config instance
+   */
   def apply(settings: RiverSettings) = {
 
     getConfigMap(settings, "kinesis") match {

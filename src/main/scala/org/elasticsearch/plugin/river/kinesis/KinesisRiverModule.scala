@@ -9,8 +9,10 @@ import org.elasticsearch.plugin.river.kinesis.processor.KinesisRecordProcessorFa
 import com.amazonaws.auth.AWSCredentials
 import org.elasticsearch.plugin.river.kinesis.util.{KinesisUtil, AwsCredentialsProvider}
 import org.elasticsearch.plugin.river.kinesis.worker.KinesisWorker
-
+*/
 /**
+ * Guice module for the Kinesis River
+ *
  * Created by JohnDeverna on 8/8/14.
  */
 class KinesisRiverModule extends AbstractModule {
