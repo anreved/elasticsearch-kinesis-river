@@ -14,4 +14,4 @@ This is still a work in progress, although initial tests have been successful
 
 
 ### Install & configure
-See the wiki for [installation](wiki/-Install) and [configuration](wiki/Configuration)
+See the wiki for [installation](github.com/anreved/elasticsearch-kinesis-river/wiki/-Install) and [configuration](github.com/anreved/elasticsearch-kinesis-river/wiki/Configuration)
